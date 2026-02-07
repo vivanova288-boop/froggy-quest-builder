@@ -37,6 +37,22 @@ function init() {
         });
     }
     
+    // Настройка показа/скрытия графики для уровней
+    const enableLevelGraphics = document.getElementById('enable-level-graphics');
+    const commonGraphics = document.getElementById('common-graphics');
+    const levelGraphics = document.getElementById('level-graphics');
+    
+    if (enableLevelGraphics) {
+        enableLevelGraphics.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                levelGraphics.style.display = 'block';
+                updateLevelGraphicsUI();
+            } else {
+                levelGraphics.style.display = 'none';
+            }
+        });
+    }
+    
     // Настройка файловых инпутов
     setupFileInput('img-hero', 'hero');
     setupFileInput('img-platform', 'platform');
@@ -53,6 +69,8 @@ function init() {
     
     setupFileInput('custom-particle-image', 'custom-particle');
     
+    setupFileInput('img-victory-hero', 'victory-hero');
+    
     // Инициализация уровней
     updateLevelsTabs();
     switchLevel(1);
@@ -60,8 +78,11 @@ function init() {
     // Настройка автоматического обновления предпросмотра
     setupAutoPreview();
     
-    // Первое обновление предпросмотра
-    setTimeout(updatePreview, 100);
+    // Первое обновление предпросмотра с увеличенной задержкой
+    setTimeout(() => {
+        console.log('Initializing first preview...');
+        updatePreview();
+    }, 500);
 }
 
 // Автоматическое обновление предпросмотра
@@ -134,11 +155,64 @@ function setupFileInput(inputId, storageKey) {
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
-                gameData[storageKey] = event.target.result;
+                try {
+                    gameData[storageKey] = event.target.result;
+                    
+                    console.log(`File loaded: ${storageKey}`);
+                    
+                    // Немедленно обновляем предпросмотр после загрузки файла
+                    setTimeout(() => {
+                        updatePreview();
+                    }, 100);
+                } catch (error) {
+                    console.error(`Error loading file ${storageKey}:`, error);
+                }
+            };
+            reader.onerror = (error) => {
+                console.error(`FileReader error for ${storageKey}:`, error);
+                alert(`Ошибка загрузки файла: ${file.name}`);
             };
             reader.readAsDataURL(file);
         }
     });
+}
+
+function updateLevelGraphicsUI() {
+    const count = parseInt(document.getElementById('levels-count').value);
+    const container = document.getElementById('level-graphics-container');
+    
+    if (!container) {
+        console.warn('level-graphics-container not found');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    for (let i = 1; i <= count; i++) {
+        const levelDiv = document.createElement('div');
+        levelDiv.style.cssText = 'background: var(--panel); padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border);';
+        levelDiv.innerHTML = `
+            <div style="color: var(--accent); font-weight: bold; margin-bottom: 10px;">Уровень ${i}</div>
+            <label style="font-size: 10px;">Персонаж</label>
+            <input type="file" id="img-hero-${i}" accept="image/*" style="font-size: 10px; padding: 6px;">
+            <label style="font-size: 10px;">Платформа</label>
+            <input type="file" id="img-platform-${i}" accept="image/*" style="font-size: 10px; padding: 6px;">
+            <label style="font-size: 10px;">Фон</label>
+            <input type="file" id="img-bg-${i}" accept="image/*" style="font-size: 10px; padding: 6px;">
+            <label style="font-size: 10px;">Жизнь</label>
+            <input type="file" id="img-life-${i}" accept="image/*" style="font-size: 10px; padding: 6px;">
+        `;
+        container.appendChild(levelDiv);
+        
+        // Настраиваем обработчики для файлов уровня
+        setupFileInput(`img-hero-${i}`, `hero-${i}`);
+        setupFileInput(`img-platform-${i}`, `platform-${i}`);
+        setupFileInput(`img-bg-${i}`, `bg-${i}`);
+        setupFileInput(`img-life-${i}`, `life-${i}`);
+    }
+    
+    // Обновляем превью после добавления полей
+    setTimeout(updatePreview, 100);
 }
 
 function updateLevelsTabs() {
@@ -156,6 +230,12 @@ function updateLevelsTabs() {
         tab.textContent = `Уровень ${i}`;
         tab.onclick = () => switchLevel(i);
         container.appendChild(tab);
+    }
+    
+    // Обновляем UI для графики уровней если она включена
+    const enableLevelGraphics = document.getElementById('enable-level-graphics');
+    if (enableLevelGraphics && enableLevelGraphics.checked) {
+        updateLevelGraphicsUI();
     }
 }
 
@@ -239,6 +319,26 @@ function updateQuestionsPreview() {
 }
 
 function buildGameHTML() {
+    // Функция для безопасного экранирования текста в JavaScript строках
+    const escapeText = (text) => {
+        if (!text) return '';
+        return text.replace(/\\/g, '\\\\')
+                   .replace(/"/g, '\\"')
+                   .replace(/\n/g, '\\n')
+                   .replace(/\r/g, '\\r')
+                   .replace(/\t/g, '\\t');
+    };
+    
+    // Функция для безопасного экранирования HTML
+    const escapeHTML = (text) => {
+        if (!text) return '';
+        return text.replace(/&/g, '&amp;')
+                   .replace(/</g, '&lt;')
+                   .replace(/>/g, '&gt;')
+                   .replace(/"/g, '&quot;')
+                   .replace(/'/g, '&#039;');
+    };
+    
     const title = document.getElementById('game-title')?.value || 'GAME';
     const welcomeText = document.getElementById('welcome-text')?.value || 'Ready to play?';
     const enableCountdown = document.getElementById('enable-countdown')?.checked ?? true;
@@ -258,6 +358,7 @@ function buildGameHTML() {
     const startButtonText = document.getElementById('start-button-text')?.value || 'START!';
     const retryButtonText = document.getElementById('retry-button-text')?.value || 'Try Again';
     const colorText = document.getElementById('color-text')?.value || '#ffffff';
+    const victoryMessage = document.getElementById('victory-message')?.value || 'Отличная работа!';
     
     const particleDirection = document.getElementById('particle-direction')?.value || 'down';
     const globalParticleSize = document.getElementById('global-particle-size')?.value || 100;
@@ -279,12 +380,37 @@ function buildGameHTML() {
         }));
     });
     
+    // Собираем графику для уровней
+    const enableLevelGraphics = document.getElementById('enable-level-graphics')?.checked || false;
+    const levelGraphics = {};
+    
+    if (enableLevelGraphics) {
+        for (let i = 1; i <= 5; i++) {
+            levelGraphics[i] = {
+                hero: gameData[`hero-${i}`] || gameData.hero || '',
+                platform: gameData[`platform-${i}`] || gameData.platform || '',
+                bg: gameData[`bg-${i}`] || gameData.bg || '',
+                life: gameData[`life-${i}`] || gameData.life || ''
+            };
+        }
+    } else {
+        // Используем общую графику для всех уровней
+        for (let i = 1; i <= 5; i++) {
+            levelGraphics[i] = {
+                hero: gameData.hero || '',
+                platform: gameData.platform || '',
+                bg: gameData.bg || '',
+                life: gameData.life || ''
+            };
+        }
+    }
+    
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${title}</title>
+<title>${escapeHTML(title)}</title>
 <style>
 :root {
     --water1: #2bbcd6;
@@ -302,8 +428,11 @@ html, body {
     height: 100%;
     overflow: hidden;
     font-family: Arial, sans-serif;
-    background: url('${gameData.bg || ''}') no-repeat center center fixed;
+    background: #2bbcd6; /* Фон по умолчанию, будет заменён через JS */
     background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
 }
 
 #start-screen {
@@ -382,7 +511,9 @@ html, body {
 .life-icon {
     width: 52px;
     height: 52px;
-    background: url('${gameData.life || ''}') no-repeat center / contain;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
     filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
     transition: transform 0.2s;
 }
@@ -446,7 +577,9 @@ html, body {
     height: 16vw;
     max-width: 180px;
     max-height: 150px;
-    background: url('${gameData.platform || ''}') no-repeat center / contain;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -507,7 +640,9 @@ html, body {
     height: calc(10vw * ${heroSize} / 100);
     max-width: calc(90px * ${heroSize} / 100);
     max-height: calc(90px * ${heroSize} / 100);
-    background: url('${gameData.hero || ''}') no-repeat center / contain;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
     transform: translate(-50%, -${heroVertical}%) scale(1.15);
     filter: drop-shadow(0 10px 15px rgba(0,0,0,0.4));
     z-index: 999 !important;
@@ -715,13 +850,88 @@ button {
 .muted-icon .speaker-waves {
     opacity: 0;
 }
+
+/* ЭКРАН ЗАГРУЗКИ */
+#loader-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, #1a2a6c, #b21f1f, #fdbb2d);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 10000;
+    opacity: 1;
+    transition: opacity 0.8s ease-out, visibility 0.8s;
+}
+
+#loader-wrapper.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.portal-loader {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 8px solid transparent;
+    border-top-color: #00ffc8;
+    border-bottom-color: #e030e0;
+    animation: spin-loader 1.5s linear infinite, pulse-loader 2s ease-in-out infinite alternate;
+    box-shadow: 0 0 30px rgba(0, 255, 200, 0.6);
+    margin-bottom: 30px;
+}
+
+.loading-text {
+    font-family: Arial, sans-serif;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    animation: flicker-loader 1s infinite alternate;
+    text-shadow: 0 0 10px rgba(255,255,255,0.8);
+}
+
+.loading-subtext {
+    font-family: Arial, sans-serif;
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+    margin-top: 10px;
+    animation: flicker-loader 1.5s infinite alternate;
+}
+
+@keyframes spin-loader {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse-loader {
+    0% { transform: scale(0.95); filter: hue-rotate(0deg); }
+    100% { transform: scale(1.1); filter: hue-rotate(90deg); }
+}
+
+@keyframes flicker-loader {
+    from { opacity: 1; }
+    to { opacity: 0.4; }
+}
 </style>
 </head>
 <body>
 
+<!-- ЭКРАН ЗАГРУЗКИ -->
+<div id="loader-wrapper">
+    <div class="portal-loader"></div>
+    <div class="loading-text">ЗАГРУЗКА...</div>
+    <div class="loading-subtext">Подготовка приключения</div>
+</div>
+
 <div id="start-screen">
-    <h1>${title}</h1>
-    <p>${welcomeText}</p>
+    <h1>${escapeHTML(title)}</h1>
+    <p>${escapeHTML(welcomeText)}</p>
     <button id="start-button" onclick="hideStartScreen()">${startButtonText}</button>
 </div>
 
@@ -730,10 +940,10 @@ ${enableCountdown ? `<div id="countdown-overlay" style="display: none; position:
 </div>` : ''}
 
 <div id="ui-layer">
-    <div id="header">${title}</div>
+    <div id="header">${escapeHTML(title)}</div>
     <div id="lives-container"></div>
     <div id="question-box">
-        <div id="q-text"><b>${welcomeText}</b></div>
+        <div id="q-text"><b>${escapeHTML(welcomeText)}</b></div>
         <div class="timer-bar"><div id="timer-fill"></div></div>
     </div>
 </div>
@@ -756,18 +966,27 @@ ${enableCountdown ? `<div id="countdown-overlay" style="display: none; position:
 </div>
 
 <div id="overlay">
-    <h1 id="msg">Game Over</h1>
+    <div id="victory-modal" style="display: none; background: rgba(255,255,255,0.95); padding: 40px; border-radius: 20px; text-align: center; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+        <img id="victory-hero-img" src="" style="max-width: 200px; max-height: 200px; display: none; margin: 0 auto 20px;">
+        <h1 id="victory-title" style="color: #22c55e; margin: 0 0 15px; font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);"></h1>
+        <p id="victory-msg" style="color: #333; font-size: 1.2em; margin: 0 0 25px; line-height: 1.6;"></p>
+        <button onclick="initGame()" style="padding: 15px 40px; font-size: 18px; background: #22c55e; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;">${retryButtonText}</button>
+    </div>
+    <h1 id="msg" style="display: none;">Game Over</h1>
     <canvas id="fireworksCanvas"></canvas>
-    <button onclick="initGame()">${retryButtonText}</button>
+    <button id="retry-btn" onclick="initGame()" style="display: none;">${retryButtonText}</button>
 </div>
 
 <script>
 const levelsBank = ${JSON.stringify(levelsBank)};
+const LEVEL_GRAPHICS = ${JSON.stringify(levelGraphics)};
 const TIMER_DURATION = ${timerDuration};
 const ENABLE_TIMER = ${enableTimer};
 const ENABLE_COUNTDOWN = ${enableCountdown};
-const VICTORY_TEXT = "${victoryText}";
-const GAMEOVER_TEXT = "${gameoverText}";
+const VICTORY_TEXT = "${escapeText(victoryText)}";
+const VICTORY_MESSAGE = "${escapeText(victoryMessage)}";
+const VICTORY_HERO_IMAGE = "${gameData['victory-hero'] || ''}";
+const GAMEOVER_TEXT = "${escapeText(gameoverText)}";
 const VICTORY_EFFECT = "${victoryEffect}";
 const GAME_LANGUAGE = "${gameLanguage}";
 const PARTICLE_DIRECTION = "${particleDirection}";
@@ -937,9 +1156,44 @@ function initGame() {
     `}
 }
 
+function applyLevelGraphics(level) {
+    const graphics = LEVEL_GRAPHICS[level];
+    if (!graphics) return;
+    
+    // Применяем фон
+    if (graphics.bg) {
+        document.body.style.backgroundImage = \`url('\${graphics.bg}')\`;
+    }
+    
+    // Применяем персонажа
+    if (graphics.hero) {
+        const frog = document.getElementById('frog');
+        if (frog) {
+            frog.style.backgroundImage = \`url('\${graphics.hero}')\`;
+        }
+    }
+    
+    // Применяем платформы
+    if (graphics.platform) {
+        document.querySelectorAll('.leaf').forEach(leaf => {
+            leaf.style.backgroundImage = \`url('\${graphics.platform}')\`;
+        });
+    }
+    
+    // Применяем иконки жизни
+    if (graphics.life) {
+        document.querySelectorAll('.life-icon').forEach(icon => {
+            icon.style.backgroundImage = \`url('\${graphics.life}')\`;
+        });
+    }
+}
+
 function startGameLogic() {
     playSound(sounds.start);
     document.getElementById('header').textContent = \`${title} - \${t.level} \${currentLevel}\`;
+    
+    // Применяем графику для текущего уровня
+    applyLevelGraphics(currentLevel);
     
     // Берём случайные вопросы из банка (максимум 6)
     const allQuestions = [...levelsBank[currentLevel]];
@@ -991,6 +1245,14 @@ function updateLives() {
         l.className = 'life-icon';
         c.appendChild(l);
     }
+    
+    // Применяем графику жизней для текущего уровня
+    const graphics = LEVEL_GRAPHICS[currentLevel];
+    if (graphics && graphics.life) {
+        document.querySelectorAll('.life-icon').forEach(icon => {
+            icon.style.backgroundImage = `url('${graphics.life}')`;
+        });
+    }
 }
 
 function loadLevel() {
@@ -1006,6 +1268,9 @@ function loadLevel() {
                 setTimeout(() => {
                     currentLevel++;
                     step = 0;
+                    
+                    // Применяем графику для нового уровня
+                    applyLevelGraphics(currentLevel);
                     
                     // Берём случайные вопросы и перемешиваем ответы
                     const allQuestions = [...levelsBank[currentLevel]];
@@ -1949,11 +2214,31 @@ function stopEffect() {
 }
 
 function showEnd(text) {
-    const msgElement = document.getElementById('msg');
-    msgElement.textContent = text;
     document.getElementById('overlay').style.display = 'flex';
     
     if (text === VICTORY_TEXT) {
+        // Показываем модальное окно победы
+        const modal = document.getElementById('victory-modal');
+        const msgElement = document.getElementById('msg');
+        const retryBtn = document.getElementById('retry-btn');
+        
+        modal.style.display = 'block';
+        msgElement.style.display = 'none';
+        retryBtn.style.display = 'none';
+        
+        // Устанавливаем текст
+        document.getElementById('victory-title').textContent = VICTORY_TEXT;
+        document.getElementById('victory-msg').textContent = VICTORY_MESSAGE;
+        
+        // Показываем изображение персонажа если есть
+        const victoryImg = document.getElementById('victory-hero-img');
+        if (VICTORY_HERO_IMAGE) {
+            victoryImg.src = VICTORY_HERO_IMAGE;
+            victoryImg.style.display = 'block';
+        } else {
+            victoryImg.style.display = 'none';
+        }
+        
         playSound(sounds.victory);
         if (VICTORY_EFFECT !== 'none') {
             fireworksCanvas.style.display = 'block';
@@ -1961,6 +2246,16 @@ function showEnd(text) {
             setTimeout(() => stopEffect(), 5000);
         }
     } else {
+        // Показываем обычный экран проигрыша
+        const modal = document.getElementById('victory-modal');
+        const msgElement = document.getElementById('msg');
+        const retryBtn = document.getElementById('retry-btn');
+        
+        modal.style.display = 'none';
+        msgElement.style.display = 'block';
+        retryBtn.style.display = 'block';
+        msgElement.textContent = text;
+        
         playSound(sounds.gameOver);
         stopEffect();
         fireworksCanvas.style.display = 'none';
@@ -1968,7 +2263,16 @@ function showEnd(text) {
 }
 
 window.onload = function() {
-    // Игра НЕ запускается автоматически
+    // Применяем графику для уровня 1 сразу при загрузке
+    applyLevelGraphics(1);
+    
+    // Скрываем экран загрузки после загрузки всех ресурсов
+    setTimeout(function() {
+        const loader = document.getElementById('loader-wrapper');
+        if (loader) {
+            loader.classList.add('hidden');
+        }
+    }, 1500); // 1.5 секунды задержки для красоты
 };
 <\/script>
 </body>
@@ -1976,16 +2280,24 @@ window.onload = function() {
 }
 
 function updatePreview() {
-    const html = buildGameHTML();
-    const iframe = document.getElementById('preview-frame');
-    
-    // Полная перезагрузка iframe
-    iframe.src = 'about:blank';
-    
-    setTimeout(() => {
-        const blob = new Blob([html], { type: 'text/html' });
-        iframe.src = URL.createObjectURL(blob);
-    }, 10);
+    try {
+        const html = buildGameHTML();
+        const iframe = document.getElementById('preview-frame');
+        
+        if (!iframe) {
+            console.error('Preview iframe not found!');
+            return;
+        }
+        
+        // Используем srcdoc вместо src для надёжной работы
+        // srcdoc не имеет ограничений на длину и работает везде
+        iframe.srcdoc = html;
+        
+        console.log('Preview updated successfully');
+    } catch (error) {
+        console.error('Error in updatePreview:', error);
+        alert('Ошибка обновления предпросмотра: ' + error.message);
+    }
 }
 
 function copyCode() {
