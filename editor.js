@@ -1162,28 +1162,28 @@ function applyLevelGraphics(level) {
     
     // Применяем фон
     if (graphics.bg) {
-        document.body.style.backgroundImage = \`url('\${graphics.bg}')\`;
+        document.body.style.backgroundImage = "url('" + graphics.bg + "')";
     }
     
     // Применяем персонажа
     if (graphics.hero) {
         const frog = document.getElementById('frog');
         if (frog) {
-            frog.style.backgroundImage = \`url('\${graphics.hero}')\`;
+            frog.style.backgroundImage = "url('" + graphics.hero + "')";
         }
     }
     
     // Применяем платформы
     if (graphics.platform) {
         document.querySelectorAll('.leaf').forEach(leaf => {
-            leaf.style.backgroundImage = \`url('\${graphics.platform}')\`;
+            leaf.style.backgroundImage = "url('" + graphics.platform + "')";
         });
     }
     
     // Применяем иконки жизни
     if (graphics.life) {
         document.querySelectorAll('.life-icon').forEach(icon => {
-            icon.style.backgroundImage = \`url('\${graphics.life}')\`;
+            icon.style.backgroundImage = "url('" + graphics.life + "')";
         });
     }
 }
@@ -1250,7 +1250,7 @@ function updateLives() {
     const graphics = LEVEL_GRAPHICS[currentLevel];
     if (graphics && graphics.life) {
         document.querySelectorAll('.life-icon').forEach(icon => {
-            icon.style.backgroundImage = `url('${graphics.life}')`;
+            icon.style.backgroundImage = "url('" + graphics.life + "')";
         });
     }
 }
