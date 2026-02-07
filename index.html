@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Froggy Quest Builder - Редактор игр</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --accent: #22c55e;
+            --accent-hover: #16a34a;
+            --text: #f1f5f9;
+            --border: #334155;
+            --input-bg: #1e293b;
+            --danger: #ef4444;
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* SIDEBAR */
+        #sidebar {
+            width: 480px;
+            background: var(--panel);
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        #sidebar::-webkit-scrollbar { width: 8px; }
+        #sidebar::-webkit-scrollbar-track { background: var(--bg); }
+        #sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        
+        .group {
+            background: var(--bg);
+            padding: 18px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .group-title {
+            font-size: 11px;
+            color: var(--accent);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .group-title::before {
+            content: '▶';
+            font-size: 8px;
+        }
+        
+        label {
+            display: block;
+            font-size: 11px;
+            margin: 12px 0 6px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="color"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: #fff;
+            border-radius: 8px;
+            font-size: 13px;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        input[type="file"] {
+            padding: 8px;
+            font-size: 11px;
+        }
+        
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+        
+        .color-picker-row {
+            display: grid;
+            grid-template-columns: 1fr 80px;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        input[type="color"] {
+            height: 45px;
+            cursor: pointer;
+            padding: 4px;
+        }
+        
+        /* КНОПКИ */
+        .btn {
+            width: 100%;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: #052e16;
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            padding: 8px 12px;
+            font-size: 11px;
+        }
+        
+        .btn-add {
+            background: #8b5cf6;
+            color: white;
+            margin-top: 10px;
+        }
+        
+        .btn-add:hover {
+            background: #7c3aed;
+        }
+        
+        /* ВОПРОСЫ */
+        .question-item {
+            background: var(--panel);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .question-number {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        
+        .option-grid {
+            display: grid;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .option-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .option-row input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+        
+        .option-row input[type="text"] {
+            margin: 0;
+        }
+        
+        .level-badge {
+            background: var(--accent);
+            color: #052e16;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+        
+        /* PREVIEW */
+        #preview-area {
+            flex: 1;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        #preview-header {
+            background: var(--panel);
+            padding: 15px 20px;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #preview-header h3 {
+            margin: 0;
+            font-size: 14px;
+            color: var(--text);
+        }
+        
+        iframe {
+            flex: 1;
+            border: none;
+            background: #000;
+        }
+        
+        .audio-grid {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .audio-item {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .audio-label {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent);
+        }
+        
+        .slider-value {
+            min-width: 45px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .hint {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        .levels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .level-tab {
+            padding: 10px;
+            background: var(--input-bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .level-tab.active {
+            background: var(--accent);
+            color: #052e16;
+            border-color: var(--accent);
+        }
+
+        .level-tab:hover:not(.active) {
+            border-color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <!-- 1. ОБЩИЕ НАСТРОЙКИ -->
+    <div class="group">
+        <div class="group-title">1. Общие настройки</div>
+        
+        <label>Название игры</label>
+        <input type="text" id="game-title" value="PAST SIMPLE CHALLENGE" placeholder="Введите название">
+        
+        <label>Приветственный текст</label>
+        <textarea id="welcome-text" rows="2" placeholder="Нажми чтобы начать приключение!">Готовы проверить свои знания?</textarea>
+        
+        <div class="checkbox-row">
+            <input type="checkbox" id="enable-countdown" checked>
+            <label style="margin: 0;">Включить обратный отсчет (3-2-1-GO)</label>
+        </div>
+    </div>
+
+    <!-- 2. ГРАФИКА -->
+    <div class="group">
+        <div class="group-title">2. Графика</div>
+        
+        <label>Персонаж (лягушка/герой)</label>
+        <input type="file" id="img-hero" accept="image/*">
+        
+        <label>Платформа (лист/астероид)</label>
+        <input type="file" id="img-platform" accept="image/*">
+        
+        <label>Фон игры</label>
+        <input type="file" id="img-bg" accept="image/*">
+        
+        <label>Иконка жизни</label>
+        <input type="file" id="img-life" accept="image/*">
+    </div>
+
+    <!-- 3. ЦВЕТА -->
+    <div class="group">
+        <div class="group-title">3. Цвета и стиль</div>
+        
+        <label>Цвет рамки вопроса</label>
+        <div class="color-picker-row">
+            <input type="color" id="color-question-border" value="#6ab04c">
+            <input type="text" id="color-question-border-hex" value="#6ab04c" maxlength="7">
+        </div>
+        
+        <label>Цвет подсветки персонажа</label>
+        <div class="color-picker-row">
+            <input type="color" id="color-glow" value="#ffffff">
+            <input type="text" id="color-glow-hex" value="#ffffff" maxlength="7">
+        </div>
+        
+        <label>Цвет прогресс-бара</label>
+        <div class="color-picker-row">
+            <input type="color" id="color-timer" value="#eb4d4b">
+            <input type="text" id="color-timer-hex" value="#eb4d4b" maxlength="7">
+        </div>
+        
+        <label>Размер текста ответов (px)</label>
+        <div class="slider-container">
+            <input type="range" id="answer-font-size" min="12" max="32" value="22">
+            <span class="slider-value" id="answer-font-value">22</span>
+        </div>
+        
+        <label>Размер персонажа (%)</label>
+        <div class="slider-container">
+            <input type="range" id="hero-size" min="50" max="150" value="100">
+            <span class="slider-value" id="hero-size-value">100</span>
+        </div>
+        
+        <label>Высота персонажа на платформе (%)</label>
+        <div class="slider-container">
+            <input type="range" id="hero-vertical" min="0" max="100" value="70">
+            <span class="slider-value" id="hero-vertical-value">70</span>
+        </div>
+        <p class="hint">0 = высоко над платформой, 100 = глубоко внутри платформы</p>
+    </div>
+
+    <!-- 4. ИГРОВЫЕ ПАРАМЕТРЫ -->
+    <div class="group">
+        <div class="group-title">4. Игровые параметры</div>
+        
+        <label>Язык интерфейса игры</label>
+        <select id="game-language">
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="de">🇩🇪 Deutsch</option>
+        </select>
+        
+        <label>Количество жизней</label>
+        <div class="slider-container">
+            <input type="range" id="lives-count" min="1" max="10" value="5">
+            <span class="slider-value" id="lives-value">5</span>
+        </div>
+        
+        <div class="checkbox-row">
+            <input type="checkbox" id="enable-timer" checked>
+            <label style="margin: 0;">Включить таймер</label>
+        </div>
+        
+        <label>Длительность таймера (секунды)</label>
+        <div class="slider-container">
+            <input type="range" id="timer-duration" min="5" max="60" value="15" step="5">
+            <span class="slider-value" id="timer-value">15</span>
+        </div>
+        
+        <label>Текст победы</label>
+        <input type="text" id="victory-text" value="ПОБЕДА! 🎉" placeholder="Поздравительный текст">
+        
+        <label>Текст проигрыша</label>
+        <input type="text" id="gameover-text" value="ИГРА ОКОНЧЕНА 😢" placeholder="Текст при поражении">
+        
+        <label>Текст кнопки "Старт"</label>
+        <input type="text" id="start-button-text" value="СТАРТ!" placeholder="Текст на кнопке старта">
+        
+        <label>Текст кнопки "Попробовать снова"</label>
+        <input type="text" id="retry-button-text" value="Попробовать снова" placeholder="Текст на кнопке повтора">
+        
+        <label>Цвет текста надписей</label>
+        <div class="color-picker-row">
+            <input type="color" id="color-text" value="#ffffff">
+            <input type="text" id="color-text-hex" value="#ffffff" maxlength="7">
+        </div>
+        
+        <label>Визуальный эффект победы</label>
+        <select id="victory-effect">
+            <option value="fireworks">🎆 Салют (фейерверки)</option>
+            <option value="confetti">🎊 Конфетти</option>
+            <option value="sunshine">☀️ Солнечный свет</option>
+            <option value="stars">⭐ Звездный дождь</option>
+            <option value="hearts">💖 Сердечки</option>
+            <option value="sparkles">✨ Искры</option>
+            <option value="bubbles">🫧 Пузыри</option>
+            <option value="rainbow">🌈 Радуга</option>
+            <option value="gold">💰 Золотой дождь</option>
+            <option value="diamonds">💎 Алмазы</option>
+            <option value="coins">🪙 Монеты</option>
+            <option value="magic">🔮 Магия</option>
+            <option value="snow">❄️ Снежинки</option>
+            <option value="flowers">🌸 Цветы</option>
+            <option value="custom">🖼️ Своя картинка</option>
+            <option value="none">Без эффектов</option>
+        </select>
+        
+        <label>Общий размер частиц (%)</label>
+        <div class="slider-container">
+            <input type="range" id="global-particle-size" min="30" max="200" value="100">
+            <span class="slider-value" id="global-particle-size-value">100</span>
+        </div>
+        <p class="hint">Влияет на размер всех частиц во всех эффектах</p>
+        
+        <label>Общая скорость частиц (%)</label>
+        <div class="slider-container">
+            <input type="range" id="global-particle-speed" min="20" max="300" value="100">
+            <span class="slider-value" id="global-particle-speed-value">100</span>
+        </div>
+        <p class="hint">Влияет на скорость движения всех частиц</p>
+        
+        <label>Количество частиц (%)</label>
+        <div class="slider-container">
+            <input type="range" id="global-particle-count" min="10" max="300" value="100">
+            <span class="slider-value" id="global-particle-count-value">100</span>
+        </div>
+        <p class="hint">Регулирует количество частиц (10% = редко, 100% = нормально, 300% = густо)</p>
+        
+        <div id="custom-effect-settings" style="display: none; margin-top: 15px; padding: 15px; background: var(--input-bg); border-radius: 8px;">
+            <label>Картинка для эффекта</label>
+            <input type="file" id="custom-particle-image" accept="image/*">
+            <p class="hint">Загрузите изображение (PNG с прозрачностью работает лучше всего)</p>
+            
+            <label>Направление движения</label>
+            <select id="particle-direction">
+                <option value="down">⬇️ Вниз (дождь)</option>
+                <option value="up">⬆️ Вверх (взлет)</option>
+                <option value="left">⬅️ Влево</option>
+                <option value="right">➡️ Вправо</option>
+                <option value="random">🔀 Случайно</option>
+                <option value="explode">💥 Взрыв (из центра)</option>
+                <option value="spiral">🌀 Спираль</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 5. АУДИО -->
+    <div class="group">
+        <div class="group-title">5. Звуковые эффекты</div>
+        <p class="hint">Загрузите 7 звуковых файлов (.mp3, .wav)</p>
+        
+        <div class="audio-grid">
+            <div class="audio-item">
+                <span class="audio-label">1. Старт игры</span>
+                <input type="file" id="audio-start" accept="audio/*">
+            </div>
+            <div class="audio-item">
+                <span class="audio-label">2. Прыжок</span>
+                <input type="file" id="audio-jump" accept="audio/*">
+            </div>
+            <div class="audio-item">
+                <span class="audio-label">3. Шок</span>
+                <input type="file" id="audio-shock" accept="audio/*">
+            </div>
+            <div class="audio-item">
+                <span class="audio-label">4. Проигрыш</span>
+                <input type="file" id="audio-lose" accept="audio/*">
+            </div>
+            <div class="audio-item">
+                <span class="audio-label">5. Победа</span>
+                <input type="file" id="audio-win" accept="audio/*">
+            </div>
+            <div class="audio-item">
+                <span class="audio-label">6. Новый уровень</span>
+                <input type="file" id="audio-level" accept="audio/*">
+            </div>
+            <div class="audio-item">
+                <span class="audio-label">7. Обратный отсчет</span>
+                <input type="file" id="audio-countdown" accept="audio/*">
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. УРОВНИ И ВОПРОСЫ -->
+    <div class="group">
+        <div class="group-title">6. Уровни и вопросы</div>
+        
+        <label>Количество уровней</label>
+        <div class="slider-container">
+            <input type="range" id="levels-count" min="1" max="5" value="3">
+            <span class="slider-value" id="levels-value">3</span>
+        </div>
+        
+        <div class="levels-grid" id="levels-tabs"></div>
+        
+        <div style="background: var(--input-bg); padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <label>📝 Формат ввода вопросов (по одному на строку):</label>
+            <p class="hint" style="margin: 5px 0 10px 0;">
+                <strong>Формат:</strong> вопрос|правильный ответ|неправильный 1|неправильный 2|
+                <br><strong>Пример:</strong> 2+2=?|4|3|5|
+            </p>
+            <textarea id="questions-input" rows="10" placeholder="2+2=?|4|3|5|
+I ___ to school|go|went|goes|
+She ___ a book|reads|read|reading|"></textarea>
+            <button class="btn btn-add" onclick="parseQuestions()" style="margin-top: 10px;">✓ Применить вопросы</button>
+        </div>
+        
+        <div id="questions-preview" style="margin-top: 15px;"></div>
+    </div>
+
+    <!-- КНОПКИ ДЕЙСТВИЙ -->
+    <p class="hint" style="text-align: center; margin-top: 10px;">💡 Предпросмотр обновляется автоматически</p>
+    <button class="btn btn-secondary" onclick="copyCode()">📋 Скопировать код для Genially</button>
+    <button class="btn btn-primary" onclick="downloadGame()">💾 Скачать игру (.html)</button>
+</div>
+
+<div id="preview-area">
+    <div id="preview-header">
+        <h3>📺 Предпросмотр в реальном времени</h3>
+    </div>
+    <iframe id="preview-frame"></iframe>
+</div>
+
+<script src="editor.js"></script>
+
+</body>
+</html>
